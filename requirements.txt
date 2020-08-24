@@ -5,3 +5,4 @@ SQLAlchemy
 gunicorn
 psycopg2
 requests
+python-dotenv
