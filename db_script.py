@@ -7,16 +7,18 @@ def print_err(err):
 
 class TwitterDb:
     def __init__(self):
-        pwd = "baw48KdcN6yRQ37yVEWjuehtx"
-        host = "localhost"
-        self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(pwd,host))
+        self.pwd = "baw48KdcN6yRQ37yVEWjuehtx"
+        self.host = "localhost"
+        self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(self.pwd,self.host))
         self.cur = self.conn.cursor(cursor_factory=RealDictCursor)
 
-    def get_cur():
+    def get_cur(self):
         try:
             self.cur.execute("SELECT 1 FROM stream_phrases;")
             return self.cur
-        except psycopg2.InterfaceError as ex:
+        except as ex:
+            self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(self.pwd,self.host))
+            print_err(ex)
             return self.conn.cursor(cursor_factory=RealDictCursor)
 
     def get_phrases(self):
