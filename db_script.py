@@ -12,12 +12,21 @@ class TwitterDb:
         self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(pwd,host))
         self.cur = self.conn.cursor(cursor_factory=RealDictCursor)
 
+    def get_cur():
+        try:
+            self.cur.execute("SELECT 1 FROM stream_phrases;")
+            return self.cur
+        except psycopg2.InterfaceError as ex:
+            return self.conn.cursor(cursor_factory=RealDictCursor)
+
     def get_phrases(self):
+        self.cur = self.get_cur()
         self.cur.execute("SELECT * FROM stream_phrases;")
         data = self.cur.fetchall()
         return data
 
     def create_occurrence(self, phrase_id):
+        self.cur = self.get_cur()
         self.cur.execute("INSERT INTO tracking (phrase_id, created_date) VALUES (%s, DATE_TRUNC('minute',CURRENT_TIMESTAMP))",[phrase_id])
         self.conn.commit()
 
@@ -27,6 +36,7 @@ class TwitterDb:
         GROUP BY phrase_id, created_date)
 	    select number_of_times, date, phrase, phrase_id FROM sum_of_minutes JOIN stream_phrases ON stream_phrases.id = sum_of_minutes.phrase_id;
         """
+        self.cur = self.get_cur()
         self.cur.execute(query)
         return self.cur.fetchall()
     
@@ -39,6 +49,7 @@ class TwitterDb:
         JOIN stream_phrases ON stream_phrases.id = sum_of_minutes.phrase_id
         GROUP BY phrase;
         """
+        self.cur = self.get_cur()
         self.cur.execute(query)
         return self.cur.fetchall()
 
