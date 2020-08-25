@@ -3,7 +3,7 @@ CREATE TABLE blogs (id SERIAL PRIMARY KEY, user_id INTEGER, text text, created_d
 CREATE TABLE stream_phrases(id SERIAL PRIMARY KEY, phrase VARCHAR(500), user_id INTEGER, created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
 CREATE TABLE tracking(id SERIAL PRIMARY KEY, phrase_id INTEGER, created_date TIMESTAMP);
-
+ALTER TABLE phrases ADD CONSTRAINT unique_phrase UNIQUE phrase;
 --query to get number of times a phrase is tweeted in a minute
 WITH sum_of_minutes AS (SELECT COUNT(created_date) as number_of_times, MAX(created_date) as date, phrase_id FROM tracking
     GROUP BY phrase_id, created_date)
