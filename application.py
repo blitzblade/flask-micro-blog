@@ -115,9 +115,13 @@ def phrases():
         u_id = request.cookies.get('user_id')
         ts = time.gmtime()
         timestamp = time.strftime("%x", ts)
-
-        db.execute("INSERT INTO stream_phrases (user_id,phrase,created_date) VALUES (:u,:p,:c)",{"u":u_id,"p":phrase,"c":timestamp})
-        db.commit()
+        try:
+            db.execute("INSERT INTO stream_phrases (user_id,phrase,created_date) VALUES (:u,:p,:c)",{"u":u_id,"p":phrase,"c":timestamp})
+            db.commit()
+        except Exception as e:
+            print_err(e)
+            db.rollback()
+            flash("Phrase already exists","error")
     result=db.execute("SELECT * from stream_phrases").fetchall()   
     for row in result:
         print("User: ",row.user_id, "Phrase:",row.phrase, "Created_date:",row.created_date)
@@ -132,7 +136,7 @@ def phrase_occurrence():
 def average_phrase():
     data = twitter_db.get_average_phrase_per_minute()
     print("DATA: ",data)
-    new_data = [ {"average_per_min": float(d["number_of_tweets"])/float(d["number_of_entries"]), "phrase": d["phrase"]} for d in data]
+    new_data = [ {"average_per_min": round(float(d["number_of_tweets"])/float(d["number_of_entries"]), 2), "phrase": d["phrase"]} for d in data]
     print(new_data)
     return json.dumps(new_data)
 
