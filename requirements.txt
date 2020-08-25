@@ -1,4 +1,5 @@
 Flask
+tweepy
 Flask-Session
 psycopg2-binary
 SQLAlchemy
