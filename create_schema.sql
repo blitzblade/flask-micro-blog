@@ -17,3 +17,9 @@ SELECT SUM(number_of_times) AS number_of_tweets, COUNT(phrase_id) as number_of_e
 JOIN stream_phrases ON stream_phrases.id = sum_of_minutes.phrase_id
 GROUP BY phrase;
 
+-- get chart data for phrase occurrences in minutes
+SELECT COUNT(tracking.created_date) as number_of_times, MAX(tracking.created_date) as date, phrase FROM tracking JOIN 
+						stream_phrases ON 
+						tracking.phrase_id = stream_phrases.id WHERE tracking.created_date 
+						BETWEEN CURRENT_TIMESTAMP - INTERVAL '30 minutes' AND CURRENT_TIMESTAMP
+    GROUP BY phrase, tracking.created_date ORDER BY tracking.created_date asc

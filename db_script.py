@@ -7,16 +7,18 @@ def print_err(err):
 
 class TwitterDb:
     def __init__(self):
-        pwd = "baw48KdcN6yRQ37yVEWjuehtx"
+        pwd = "postgres"
+        # pwd = "baw48KdcN6yRQ37yVEWjuehtx"
         host = "localhost"
         self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(pwd,host))
         self.cur = self.conn.cursor(cursor_factory=RealDictCursor)
 
-    def get_cur():
+    def get_cur(self):
         try:
             self.cur.execute("SELECT 1 FROM stream_phrases;")
             return self.cur
         except psycopg2.InterfaceError as ex:
+            self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(pwd,host))
             return self.conn.cursor(cursor_factory=RealDictCursor)
 
     def get_phrases(self):
@@ -48,6 +50,18 @@ class TwitterDb:
         SELECT SUM(number_of_times) AS number_of_tweets, COUNT(phrase_id) as number_of_entries, MAX(phrase) as phrase FROM sum_of_minutes 
         JOIN stream_phrases ON stream_phrases.id = sum_of_minutes.phrase_id
         GROUP BY phrase;
+        """
+        self.cur = self.get_cur()
+        self.cur.execute(query)
+        return self.cur.fetchall()
+
+    def get_chart_data_for_minutes(self):
+        query = """
+        SELECT COUNT(tracking.created_date) as number_of_times, MAX(tracking.created_date) as date, phrase FROM tracking JOIN 
+						stream_phrases ON 
+						tracking.phrase_id = stream_phrases.id WHERE tracking.created_date 
+						BETWEEN CURRENT_TIMESTAMP - INTERVAL '30 minutes' AND CURRENT_TIMESTAMP
+                        GROUP BY phrase, tracking.created_date ORDER BY tracking.created_date asc
         """
         self.cur = self.get_cur()
         self.cur.execute(query)

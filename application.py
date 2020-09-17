@@ -8,6 +8,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from db_script import TwitterDb, print_err
 import create_db_connection
 import json
+from random import randint
 
 app = Flask(__name__)
 
@@ -65,17 +66,15 @@ def after_login():
                 print(mybool)
                 if(mybool):
                     display = False
-                    resp = make_response(render_template('feed.html',u=u,display=display))  
-                    resp.set_cookie('username',u) 
-                    resp.set_cookie('user_id',str(row[0])) 
-                    return resp
+                    session['username'] = u
+                    session['user_id'] = str(row[0])
+                    return redirect('/dashboard')
 
                 else:        
                     display = True    
-                    resp = make_response(render_template('feed.html',u=u,display=display))  
-                    resp.set_cookie('username',u)  
-                    resp.set_cookie('user_id',str(row[0])) 
-                    return resp  
+                    session['username'] = u
+                    session['user_id'] = str(row[0])
+                    return redirect('/dashboard')
             
         else:
             message2 = True
@@ -106,6 +105,31 @@ def feed():
         print("User: ",row.user_id, "Blog:",row.text, "Created_date:",row.created_date)
     return render_template('posts.html',result=result)   
 
+@app.route("/dashboard")
+def dashboard():
+    
+    return render_template('dashboard.html')   
+
+@app.route("/edit_phrase/<id>", methods=['GET','POST'])
+def edit_phrase(id):
+    if request.method == "POST":
+        try:
+            data = request.form
+            phrase = data["phrase"]
+            db.execute("UPDATE stream_phrases SET phrase = :phrase WHERE id = :id",{"phrase":phrase,"id":id})
+            db.commit()
+            flash("Phrase updated successfully", "success")
+            return redirect('/phrases')
+        except Exception as e:
+            print_err(e)
+            db.rollback()
+            flash("Error updating phrase","error")
+        
+
+    phrase = db.execute("SELECT * from stream_phrases WHERE id = :id", {"id": id}).fetchone()
+    print("PHRASE: ",phrase)
+    return render_template('edit_phrase.html',phrase=phrase)
+    
 
 @app.route("/phrases", methods=['GET','POST'])
 def phrases():
@@ -118,6 +142,7 @@ def phrases():
         try:
             db.execute("INSERT INTO stream_phrases (user_id,phrase,created_date) VALUES (:u,:p,:c)",{"u":u_id,"p":phrase,"c":timestamp})
             db.commit()
+            flash("Phrase created successfully", "success")
         except Exception as e:
             print_err(e)
             db.rollback()
@@ -140,25 +165,72 @@ def average_phrase():
     print(new_data)
     return json.dumps(new_data)
 
-
-
 @app.route("/home")
 def home_after_login():
-    u = request.cookies.get('username')
-    u_id = request.cookies.get('user_id')
-    ts = time.gmtime()
-    timestamp = time.strftime("%x", ts)
-                
-    mybool = db.execute("SELECT * FROM blogs WHERE user_id=:u AND created_date=:timestamp",{"u":u_id,"timestamp":timestamp}).rowcount > 0
-    print(mybool)
-    if(mybool):
-        display = False
-        return render_template('feed.html',display=display)
+    return render_template('dashboard.html') 
 
-    else:        
-        display = True    
-        return render_template('feed.html',display=display) 
+@app.route("/monitor_phrases", methods=["GET","POST"])
+def monitor_phrases():
+    if request.method == "POST":
+        data = request.form
+        phrase = data["phrase"]
+        u_id = request.cookies.get('user_id')
+        ts = time.gmtime()
+        timestamp = time.strftime("%x", ts)
+        try:
+            db.execute("INSERT INTO stream_phrases (user_id,phrase,created_date) VALUES (:u,:p,:c)",{"u":u_id,"p":phrase,"c":timestamp})
+            db.commit()
+        except Exception as e:
+            print_err(e)
+            db.rollback()
+            flash("Phrase already exists","error")
+    result=db.execute("SELECT * from stream_phrases").fetchall()   
+    for row in result:
+        print("User: ",row.user_id, "Phrase:",row.phrase, "Created_date:",row.created_date)
+
+    return render_template('monitor_phrases.html', result=results)
+
+@app.route('/chart_data/<duration_type>', methods=['GET'])
+def chart_data(duration_type):
+    final_data = {}
+    if duration_type == "minutes":
+
+        datasets = []
+        phrases = twitter_db.get_phrases()
+        data = twitter_db.get_chart_data_for_minutes()
+        labels = list(set([d["date"] for d in data]))
+        labels = [str(d) for d in labels]
 
 
+        print(labels)
+        
+        for phrase in phrases:
+            datasets.append(
+                {
+                    "label": phrase["phrase"], 
+                    "borderColor": "rgb({r},{g},{b})".format(r=randint(0,255),g=randint(0,255),b=randint(0,255)),
+                    "data":[d["number_of_times"] for d in data if d["phrase"] == phrase["phrase"]]
+                 })
+        print("DATA: ",datasets)
+        
+        final_data["labels"] = labels
+        final_data["datasets"] = datasets
+        return json.dumps(final_data)
+    # {
+    #   labels: ['9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'],
+    #   datasets: [{
+    #     label: 'Volcano',
+    #     // backgroundColor: 'rgb(255, 99, 132)',
+    #     borderColor: 'rgb(255, 99, 132)',
+    #     data: [0, 10, 5, 2, 20, 30, 45]
+    #   },
+    #   {
+    #     label: 'Earthquake',
+    #     // backgroundColor: 'rgb(0, 99, 132)',
+    #     borderColor: 'rgb(0, 99, 132)',
+    #     data: [16, 1, 18, 2, 20, 30, 65]
+    #   }
+    #   ]
+    # }
 if __name__ == "__main__":
     app.run()
