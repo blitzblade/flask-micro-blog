@@ -17,8 +17,14 @@ class TwitterDb:
         try:
             self.cur.execute("SELECT 1 FROM stream_phrases;")
             return self.cur
+<<<<<<< HEAD
         except psycopg2.InterfaceError as ex:
             self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(pwd,host))
+=======
+        except as ex:
+            self.conn = psycopg2.connect("dbname=twitter_streamer_db user=postgres password={} host={}".format(self.pwd,self.host))
+            print_err(ex)
+>>>>>>> 8cc291140f11af4bc485247f73812964b5903d3c
             return self.conn.cursor(cursor_factory=RealDictCursor)
 
     def get_phrases(self):
