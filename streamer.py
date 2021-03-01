@@ -3,10 +3,10 @@ import tweepy
 import time
 from db_script import TwitterDb, print_err
 
-CONSUMER_KEY = 'YvGsGAIQClMbWhXqVOyxgTG6e'
-CONSUMER_SECRET = 'izH4DIsNx6zo0jZ4EpBRncLLHgEHAylZINgULkqXARDogzIWyB'
-ACCESS_TOKEN = '1115223790647164928-xgtaYxtILY1KWFjcMb4S2mYLc03WxI'
-ACCESS_SECRET = 'mZTHehwOiRjZy5oVCzbrqDqD6G6o1QsvDxB22R1iEnhjE'
+CONSUMER_KEY = ''
+CONSUMER_SECRET = ''
+ACCESS_TOKEN = ''
+ACCESS_SECRET = ''
 
 auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
